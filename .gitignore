@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+env/
+venv/
+
+# Data & outputs
+data/spectra/*
+data/logs/*
+*.png
+*.svg
+*.csv
+
+# OS / IDE
+.DS_Store
+*.swp
+.vscode/
+.idea/

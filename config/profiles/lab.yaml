@@ -1,0 +1,23 @@
+mode: real
+serial:
+  port: "/dev/ttyACM0"
+  baud: 115200
+paths:
+  spectra_dir: "data/spectra"
+  img_log: "data/logs/img_log.tsv"
+graphics:
+  lambda_min: 400
+  lambda_max: 700
+  lambda_selected_nm: 520
+  refresh_ms: 200
+processing:
+  median_window: 5
+  use_led_sync: true
+kinetics:
+  enabled: false
+  order_n: 1.0
+  epsilon: 1.0
+  path_length_cm: 1.0
+  Ea_Jmol: 45000
+  A_preex: 1.0e7
+  C0: 1.0e-4

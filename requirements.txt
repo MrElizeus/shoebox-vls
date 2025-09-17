@@ -1,0 +1,8 @@
+numpy
+matplotlib>=3.3
+Pillow
+tifffile
+watchdog
+pyserial
+scipy
+pyyaml
