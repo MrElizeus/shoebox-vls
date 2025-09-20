@@ -1,23 +1,21 @@
-mode: sim
-serial:
-  port: null        # e.g. /dev/ttyACM0 en Linux, COM3 en Windows
-  baud: 115200
-paths:
-  spectra_dir: "data/spectra"
-  img_log: "data/logs/img_log.tsv"
+mode: real                      # real | sim
 graphics:
+  refresh_ms: 200
   lambda_min: 400
   lambda_max: 700
   lambda_selected_nm: 520
-  refresh_ms: 200
-processing:
-  median_window: 5
-  use_led_sync: true
-kinetics:
-  enabled: false
-  order_n: 1.0
-  epsilon: 1.0
-  path_length_cm: 1.0
-  Ea_Jmol: 45000
-  A_preex: 1.0e7
-  C0: 1.0e-4
+imaging:
+  source: camera                # camera | screen
+  camera_index: 0               # cambia si tienes varias cámaras
+  fps: 10
+  roi: {x: 100, y: 200, w: 800, h: 80}   # franja de colores
+  resize_w: 500                 # tamaño espectro 1×W
+  gamma: 2.2222
+  background_subtract: 300.0
+  min_floor: 0.001
+  log10: true
+serial:
+  port: "COM3"                  # o /dev/ttyACM0 en Linux
+  baud: 115200
+paths:
+  export_dir: "data/exports"
