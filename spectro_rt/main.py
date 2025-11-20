@@ -13,12 +13,21 @@ except Exception:
     from spectro_rt.gui import SpectroRTApp  # type: ignore
 
 
+def _merge_into(base: dict, incoming: dict) -> dict:
+    for k, v in incoming.items():
+        if isinstance(v, dict) and k in base and isinstance(base[k], dict):
+            base[k].update(v)
+        else:
+            base[k] = v
+    return base
+
+
 def load_config() -> dict:
-    # Carga config por defecto si existe; si no, crea una mínima.
+    # Carga config por defecto si existe; si no, crea una minima.
     base = {
         "mode": "sim",
         "graphics": {"refresh_ms": 200, "window_s": 120, "lambda_min": 400, "lambda_max": 700, "lambda_selected_nm": 520},
-        "paths": {"export_dir": "data/exports"},
+        "paths": {"export_dir": "data/exports", "raw_roi_dir": "raw_frames"},
         "serial": {"port": "COM3", "baud": 115200},
         "imaging": {
             "source": "camera",        # "camera" | "screen"
@@ -31,26 +40,28 @@ def load_config() -> dict:
             "background_subtract": 300.0,
             "min_floor": 1e-3,
             "log10": True,
+            "save_raw_roi": True,
+            "save_raw_png": True,
             "baseline": {"mode": "ema", "alpha": 0.01},
         },
         "blank": {"domain": "log", "N": 200, "autoN": 0},
         "chemistry": {"k_factor": 1.0},
     }
-    path = Path("config/config.default.yaml")
-    if path.exists():
+    default_path = Path('config/config.default.yaml')
+    user_path = Path('config/config.local.yaml')
+
+    for path in (default_path, user_path):
+        if not path.exists():
+            continue
         try:
-            with path.open("r", encoding="utf-8") as f:
+            with path.open('r', encoding='utf-8') as f:
                 disk = yaml.safe_load(f) or {}
-            # merge simple (shallow)
-            for k, v in disk.items():
-                if isinstance(v, dict) and k in base and isinstance(base[k], dict):
-                    base[k].update(v)
-                else:
-                    base[k] = v
+            base = _merge_into(base, disk)
         except Exception:
             pass
-    return base
 
+    base.setdefault('_meta', {})['user_config_path'] = str(user_path)
+    return base
 
 def parse_args(argv=None):
     p = argparse.ArgumentParser(description="spectro-rt launcher")

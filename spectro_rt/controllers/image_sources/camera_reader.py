@@ -27,6 +27,7 @@ class CameraReader:
         self,
         cam_index: int = -1,           # -1 = auto-detect
         fps: float = 12.0,
+        backend: str | int | None = None,
         frame_cb: Optional[Callable[[float, "np.ndarray"], None]] = None,
         initial_controls: Optional[Dict] = None,
         disable_auto_on_start: bool = True,
@@ -38,6 +39,7 @@ class CameraReader:
         self.cam_index_real: Optional[int] = None
         self.backend_real: Optional[int] = None
         self.max_scan_index = int(max_scan_index)
+        self.backend_pref = backend
 
         self.target_dt = 1.0 / max(1.0, float(fps))
         self.frame_cb = frame_cb
@@ -50,8 +52,38 @@ class CameraReader:
 
     # ---------- Enumeración ----------
     @staticmethod
-    def _backend_list() -> List[int]:
-        return [getattr(cv2, "CAP_MSMF", 0), getattr(cv2, "CAP_DSHOW", 700), getattr(cv2, "CAP_ANY", 0)]
+    def _resolve_backend(value: str | int | None) -> Optional[int]:
+        if value is None:
+            return None
+        if isinstance(value, int):
+            return value
+        name = value.lower()
+        mapping = {
+            "dshow": getattr(cv2, "CAP_DSHOW", None),
+            "msmf": getattr(cv2, "CAP_MSMF", None),
+            "any": getattr(cv2, "CAP_ANY", None),
+            "auto": None,
+        }
+        return mapping.get(name)
+
+    def _backend_list(self) -> List[int]:
+        order: List[int] = []
+
+        def push(api: Optional[int]) -> None:
+            if api is None:
+                return
+            if api not in order:
+                order.append(api)
+
+        pref = self._resolve_backend(self.backend_pref)
+        push(pref)
+
+        # Windows prefiere DSHOW frente a MSMF; en otros sistemas CAP_ANY funciona.
+        push(getattr(cv2, "CAP_DSHOW", None))
+        push(getattr(cv2, "CAP_MSMF", None))
+        push(getattr(cv2, "CAP_ANY", None))
+
+        return order or [0]
 
     @staticmethod
     def backend_name(api: int) -> str:
@@ -176,20 +208,32 @@ class CameraReader:
     def _disable_autos(self) -> None:
         if self._cap is None:
             return
-        try:
-            # Variantes de autoexposición
-            for val in (0, 1, 0.25, 0.75):
-                self._cap.set(getattr(cv2, "CAP_PROP_AUTO_EXPOSURE", 0), val)
-            # AutoWB / AutoFocus
-            try: self._cap.set(getattr(cv2, "CAP_PROP_AUTO_WB", 0), 0)
-            except Exception: pass
-            try: self._cap.set(getattr(cv2, "CAP_PROP_AUTOFOCUS", 0), 0)
-            except Exception: pass
-            # Backlight compensation a 0
-            try: self._cap.set(getattr(cv2, "CAP_PROP_BACKLIGHT", 0), 0)
-            except Exception: pass
-        except Exception:
-            pass
+        def _set(prop: str, value: float) -> None:
+            pid = getattr(cv2, prop, None)
+            if pid is None:
+                return
+            try:
+                self._cap.set(pid, value)
+            except Exception:
+                pass
+
+        # Desactivamos todos los auto-ajustes conocidos.
+        _set("CAP_PROP_AUTO_EXPOSURE", 0.25)  # manual (DirectShow/MSMF)
+        _set("CAP_PROP_AUTO_EXPOSURE", 0.0)   # algunos backends usan 0.0
+        _set("CAP_PROP_AUTO_WB", 0.0)
+        _set("CAP_PROP_AUTOFOCUS", 0.0)
+        _set("CAP_PROP_AUTO_GAMMA", 0.0)
+        _set("CAP_PROP_AUTO_ISO_SPEED", 0.0)
+        _set("CAP_PROP_AUTOGRAB", 0.0)
+        _set("CAP_PROP_BACKLIGHT", 0.0)
+
+        # Al quedar en modo manual, reescribimos los valores fijos si estaban en los controles.
+        if "gain" in self.controls:
+            _set("CAP_PROP_GAIN", float(self.controls["gain"]))
+        if "exposure" in self.controls:
+            _set("CAP_PROP_EXPOSURE", float(self.controls["exposure"]))
+        if "focus" in self.controls:
+            _set("CAP_PROP_FOCUS", float(self.controls["focus"]))
 
     def _apply_controls(self, C: Dict) -> None:
         if self._cap is None:

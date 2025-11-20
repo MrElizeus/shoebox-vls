@@ -1,0 +1,42 @@
+mode: real
+graphics:
+  refresh_ms: 200
+  window_s: 120
+  lambda_min: 400
+  lambda_max: 700
+  lambda_selected_nm: 680.0
+paths:
+  export_dir: data/exports
+  raw_roi_dir: raw_frames
+serial:
+  port: COM3
+  baud: 115200
+imaging:
+  source: camera
+  camera_index: 0
+  fps: 10
+  preview_ms: 66
+  resize_w: 500
+  roi:
+    x: 317
+    y: 135
+    w: 260
+    h: 46
+  gamma: 2.2222
+  background_subtract: 300.0
+  min_floor: 0.001
+  log10: true
+  save_raw_roi: true
+  baseline:
+    mode: ema
+    alpha: 0.01
+  backend: auto
+  blank_avg_total: 30
+  camera_controls:
+    focus: 25.0
+blank:
+  domain: log
+  N: 200
+  autoN: 0
+chemistry:
+  k_factor: 1.0

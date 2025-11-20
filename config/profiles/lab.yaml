@@ -5,6 +5,8 @@ serial:
 paths:
   spectra_dir: "data/spectra"
   img_log: "data/logs/img_log.tsv"
+imaging:
+  backend: dshow
 graphics:
   lambda_min: 400
   lambda_max: 700
